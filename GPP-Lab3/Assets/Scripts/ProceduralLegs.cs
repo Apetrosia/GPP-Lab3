@@ -24,6 +24,7 @@ public class ProceduralLegs : MonoBehaviour
         [HideInInspector] public bool stepping;
         [HideInInspector] public float reach;        // макс. вынос копыта от точки под бедром
         [HideInInspector] public float prevPhase;
+        [HideInInspector] public Vector3 hipVel;     // скорость бедра (линейная + от поворота)
     }
 
     public PonyFollow pony;
@@ -39,7 +40,7 @@ public class ProceduralLegs : MonoBehaviour
     [Header("Stride")]
     [Tooltip("Сколько тело проходит за один цикл шага")]
     public float strideLen     = 0.40f;
-    [Range(0.1f, 0.45f)] public float swingFraction = 0.32f; // доля цикла в переносе
+    [Range(0.1f, 0.45f)] public float swingFraction = 0.22f; // доля цикла в переносе — строго по одной ноге
     public float stepHeight    = 0.06f;
 
     float gaitCycle;
@@ -113,13 +114,29 @@ public class ProceduralLegs : MonoBehaviour
         Vector3 velocity = pony.Velocity;
         velocity.y = 0f;
         float speed = velocity.magnitude;
-        bool moving = speed > 0.02f;
+
+        // Скорость каждого бедра с учётом поворота: на повороте наружные ноги
+        // уезжают из-под корпуса быстрее линейной скорости, и без этого они
+        // срывались в аварийный шаг вне очереди — по несколько копыт сразу.
+        Vector3 angular = Vector3.up * (pony.YawRate * Mathf.Deg2Rad);
+        float gaitSpeed = 0f;
+        for (int i = 0; i < legs.Length; i++)
+        {
+            Leg leg = legs[i];
+            if (!Valid(leg)) continue;
+            Vector3 radius = leg.ik.bones[0].position - transform.position;
+            leg.hipVel = velocity + Vector3.Cross(angular, radius);
+            leg.hipVel.y = 0f;
+            gaitSpeed = Mathf.Max(gaitSpeed, leg.hipVel.magnitude);
+        }
+
+        bool moving = gaitSpeed > 0.02f;
 
         // Каденция: один цикл на effectiveStride пути. Стоя — цикл замирает.
         float rate = 0f;
         if (moving)
         {
-            rate = Mathf.Clamp(speed / Mathf.Max(effectiveStride, 0.05f), 0.5f, 4f);
+            rate = Mathf.Clamp(gaitSpeed / Mathf.Max(effectiveStride, 0.05f), 0.5f, 4f);
             gaitCycle += rate * Time.deltaTime;
         }
 
@@ -138,6 +155,11 @@ public class ProceduralLegs : MonoBehaviour
         float swingTime  = rate > 0.0001f ? swingFraction / rate : 0.25f;
         float stanceTime = rate > 0.0001f ? (1f - swingFraction) / rate : 0f;
 
+        // Строго одна нога в воздухе: так пони физически не может «полететь».
+        bool anySwing = false;
+        for (int i = 0; i < legs.Length; i++)
+            if (Valid(legs[i]) && legs[i].stepping) anySwing = true;
+
         for (int i = 0; i < legs.Length; i++)
         {
             Leg leg = legs[i];
@@ -151,8 +173,11 @@ public class ProceduralLegs : MonoBehaviour
             bool windowStart = p < swingFraction && leg.prevPhase > p; // вошли в свой такт
             leg.prevPhase = p;
 
-            if (!leg.stepping && moving && (windowStart || Overdue(leg, rest)))
-                BeginStep(leg, rest, velocity, swingTime, stanceTime);
+            if (!leg.stepping && moving && !anySwing && (windowStart || Overdue(leg, rest)))
+            {
+                BeginStep(leg, rest, leg.hipVel, swingTime, stanceTime);
+                anySwing = true;
+            }
 
             Vector3 target;
 
@@ -178,13 +203,30 @@ public class ProceduralLegs : MonoBehaviour
             }
             else
             {
-                // Стоим — плавно подтягиваем копыто под бедро.
                 if (!moving)
                 {
+                    // Стоим — плавно подтягиваем копыто под бедро.
                     leg.footWorld = Vector3.Lerp(leg.footWorld, rest,
                         1f - Mathf.Exp(-6f * Time.deltaTime));
-                    leg.footWorld.y = leg.groundY;
                 }
+                else
+                {
+                    // Опора ждёт своей очереди на повороте — не даём ноге
+                    // выйти за досягаемость, иначе IK оторвёт копыто от земли.
+                    Vector3 d = leg.footWorld - rest;
+                    d.y = 0f;
+                    float maxOffset = leg.reach * 0.95f;
+                    if (d.magnitude > maxOffset)
+                    {
+                        leg.footWorld = Vector3.Lerp(
+                            leg.footWorld,
+                            new Vector3(rest.x + d.normalized.x * maxOffset,
+                                        leg.groundY,
+                                        rest.z + d.normalized.z * maxOffset),
+                            1f - Mathf.Exp(-18f * Time.deltaTime));
+                    }
+                }
+                leg.footWorld.y = leg.groundY;
                 target = leg.footWorld;
             }
 
@@ -200,7 +242,7 @@ public class ProceduralLegs : MonoBehaviour
         return d.magnitude > leg.reach;
     }
 
-    void BeginStep(Leg leg, Vector3 rest, Vector3 velocity, float swingTime, float stanceTime)
+    void BeginStep(Leg leg, Vector3 rest, Vector3 hipVelocity, float swingTime, float stanceTime)
     {
         leg.stepping = true;
         leg.stepT = 0f;
@@ -209,8 +251,8 @@ public class ProceduralLegs : MonoBehaviour
         // Копыто ставится на пол-опоры впереди бедра в момент приземления —
         // тогда середина опоры приходится ровно под бедром, а вынос за пределы
         // досягаемости одинаков вперёд и назад.
-        Vector3 landingHip = rest + velocity * swingTime;
-        Vector3 offset = velocity * (stanceTime * 0.5f);
+        Vector3 landingHip = rest + hipVelocity * swingTime;
+        Vector3 offset = hipVelocity * (stanceTime * 0.5f);
 
         float max = leg.reach * 0.95f;
         if (offset.magnitude > max)

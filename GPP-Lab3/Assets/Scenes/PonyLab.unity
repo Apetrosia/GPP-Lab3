@@ -1097,6 +1097,7 @@ MonoBehaviour:
     stepping: 0
     reach: 0
     prevPhase: 0
+    hipVel: {x: 0, y: 0, z: 0}
   - hoof: {fileID: 455181235}
     ik: {fileID: 2085549438}
     phase: 0.25
@@ -1108,6 +1109,7 @@ MonoBehaviour:
     stepping: 0
     reach: 0
     prevPhase: 0
+    hipVel: {x: 0, y: 0, z: 0}
   - hoof: {fileID: 455181234}
     ik: {fileID: 2085549437}
     phase: 0.5
@@ -1119,6 +1121,7 @@ MonoBehaviour:
     stepping: 0
     reach: 0
     prevPhase: 0
+    hipVel: {x: 0, y: 0, z: 0}
   - hoof: {fileID: 455181202}
     ik: {fileID: 2085549436}
     phase: 0.75
@@ -1130,12 +1133,13 @@ MonoBehaviour:
     stepping: 0
     reach: 0
     prevPhase: 0
+    hipVel: {x: 0, y: 0, z: 0}
   bodyDrop: 0.024
   bodyBobAmp: 0.006
   bodyRollAmp: 1
   bodyPitchAmp: 0.5
   strideLen: 0.4
-  swingFraction: 0.32
+  swingFraction: 0.22
   stepHeight: 0.06
 --- !u!114 &2085549436
 MonoBehaviour:

@@ -100,7 +100,7 @@ public static class PonyLabBuilder
         gait.bodyDrop = 0.024f;
         gait.bodyBobAmp = 0.006f;
         gait.strideLen = 0.40f;
-        gait.swingFraction = 0.32f;
+        gait.swingFraction = 0.22f;
         gait.stepHeight = 0.06f;
 
         var motion = model.AddComponent<PonyBodyMotion>();
