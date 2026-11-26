@@ -80,7 +80,7 @@ public static class PonyLabBuilder
             ik.endBone = hoof;
             ik.poleLocal = poles[i];
             ik.useLastJoint = useLast[i];
-            ik.lastJointShare = 0.5f;
+            ik.lastJointShare = 0.3f;
             ik.bones = new Transform[chains[i].Length];
             for (int b = 0; b < chains[i].Length; b++)
                 ik.bones[b] = Find(model.transform, chains[i][b]);
@@ -97,9 +97,9 @@ public static class PonyLabBuilder
         gait.pony = follow;
         gait.body = model.transform;
         gait.legs = legs;
-        gait.bodyDrop = 0.02f;
-        gait.bodyBobAmp = 0.012f;
-        gait.strideLen = 0.44f;
+        gait.bodyDrop = 0.024f;
+        gait.bodyBobAmp = 0.006f;
+        gait.strideLen = 0.40f;
         gait.swingFraction = 0.32f;
         gait.stepHeight = 0.06f;
 
