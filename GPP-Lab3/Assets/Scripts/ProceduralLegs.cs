@@ -31,21 +31,22 @@ public class ProceduralLegs : MonoBehaviour
     public Leg[] legs = new Leg[4];
 
     [Header("Body")]
-    public float bodyDrop = 0.03f;      // просадка корпуса, чтобы ноги могли сгибаться
-    public float bodyBobAmp   = 0.015f;
+    public float bodyDrop = 0.02f;      // просадка корпуса, чтобы ноги могли сгибаться
+    public float bodyBobAmp   = 0.012f; // корпус выше всего в середине опоры каждой ноги
     public float bodyRollAmp  = 1.0f;
     public float bodyPitchAmp = 0.6f;
 
     [Header("Stride")]
     [Tooltip("Сколько тело проходит за один цикл шага")]
-    public float strideLen     = 0.40f;
+    public float strideLen     = 0.44f;
     [Range(0.1f, 0.45f)] public float swingFraction = 0.32f; // доля цикла в переносе
     public float stepHeight    = 0.06f;
 
     float gaitCycle;
     Vector3 bodyBase;
     Quaternion bodyRotStart;
-    float effectiveStride = 0.40f;
+    float effectiveStride = 0.44f;
+    float bobPhase;
     bool ready;
 
     void Start()
@@ -72,18 +73,29 @@ public class ProceduralLegs : MonoBehaviour
             leg.prevPhase = Mathf.Repeat(leg.phase, 1f);
         }
 
+        // Фаза покачивания: корпус должен быть выше всего в середине опоры.
+        foreach (Leg leg in legs)
+        {
+            if (!Valid(leg)) continue;
+            float midStance = leg.phase + (1f + swingFraction) * 0.5f;
+            bobPhase = Mathf.Repeat(4f * midStance, 1f);
+            break;
+        }
+
         // Теперь опускаем корпус — ноги получают запас для сгиба.
         if (body != null)
             body.localPosition = bodyBase - Vector3.up * bodyDrop;
 
         // Насколько далеко копыто может уйти в сторону от точки под бедром,
         // оставаясь достижимым: радиус сферы досягаемости ноги на уровне земли.
+        // Считаем по самому низкому положению корпуса (просадка + покачивание).
         float minReach = float.MaxValue;
         foreach (Leg leg in legs)
         {
             if (!Valid(leg)) continue;
-            float chain = (leg.ik.upperLen + leg.ik.lowerLen) * 0.98f;
-            float hipHeight = Mathf.Max(0.01f, leg.ik.bones[0].position.y - leg.groundY);
+            float chain = leg.ik.chainLen * 0.98f;
+            float hipHeight = Mathf.Max(0.01f,
+                leg.ik.bones[0].position.y - leg.groundY - bodyBobAmp);
             float r2 = chain * chain - hipHeight * hipHeight;
             leg.reach = Mathf.Max(0.06f, r2 > 0.0001f ? Mathf.Sqrt(r2) : 0.06f);
             minReach = Mathf.Min(minReach, leg.reach);
@@ -91,7 +103,7 @@ public class ProceduralLegs : MonoBehaviour
         if (minReach == float.MaxValue) minReach = 0.12f;
 
         // Длина шага не должна выводить самую короткую ногу за пределы досягаемости.
-        float maxStride = 2f * minReach * 0.8f / Mathf.Max(0.2f, 1f - swingFraction);
+        float maxStride = 2f * minReach * 0.88f / Mathf.Max(0.2f, 1f - swingFraction);
         effectiveStride = Mathf.Min(strideLen, maxStride);
 
         ready = true;
@@ -121,8 +133,9 @@ public class ProceduralLegs : MonoBehaviour
         }
 
         // Корпус: просадка + покачивание поверх бэйкнутого FBX-поворота.
-        float moving01 = Mathf.Clamp01(speed / 0.6f);
-        float bob   = Mathf.Sin(gaitCycle * Mathf.PI * 4f) * bodyBobAmp * moving01;
+        float moving01 = Mathf.Clamp01(speed / 0.25f);
+        float bob = Mathf.Cos((gaitCycle * 4f - bobPhase) * Mathf.PI * 2f)
+            * bodyBobAmp * moving01;
         float roll  = Mathf.Sin(gaitCycle * Mathf.PI * 2f) * bodyRollAmp * moving01;
         float pitch = Mathf.Sin(gaitCycle * Mathf.PI * 4f + Mathf.PI * 0.5f) * bodyPitchAmp * moving01;
         if (body != null)

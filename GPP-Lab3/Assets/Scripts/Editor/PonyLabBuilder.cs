@@ -40,7 +40,7 @@ public static class PonyLabBuilder
 
         var follow = pony.AddComponent<PonyFollow>();
         follow.target = ball.transform;
-        follow.speed = 1.2f;
+        follow.MaxSpeed = 0.6f;
         follow.stopDistance = 1.4f;
 
         // Цели копыт.
@@ -72,10 +72,15 @@ public static class PonyLabBuilder
                 Vector3.back,    // HindR
                 Vector3.forward  // FrontR
             };
+            // Задние — два сустава (бедро + скакательный), низ жёсткий.
+            // Передние — три: плечо, запястье и копытный сустав.
+            bool[] useLast = { false, true, false, true };
             var ik = pony.AddComponent<LimbIK>();
             ik.target = target;
             ik.endBone = hoof;
             ik.poleLocal = poles[i];
+            ik.useLastJoint = useLast[i];
+            ik.lastJointShare = 0.5f;
             ik.bones = new Transform[chains[i].Length];
             for (int b = 0; b < chains[i].Length; b++)
                 ik.bones[b] = Find(model.transform, chains[i][b]);
@@ -92,8 +97,9 @@ public static class PonyLabBuilder
         gait.pony = follow;
         gait.body = model.transform;
         gait.legs = legs;
-        gait.bodyDrop = 0.03f;
-        gait.strideLen = 0.40f;
+        gait.bodyDrop = 0.02f;
+        gait.bodyBobAmp = 0.012f;
+        gait.strideLen = 0.44f;
         gait.swingFraction = 0.32f;
         gait.stepHeight = 0.06f;
 

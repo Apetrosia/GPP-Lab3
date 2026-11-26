@@ -1085,11 +1085,11 @@ MonoBehaviour:
     stepping: 0
     reach: 0
     prevPhase: 0
-  bodyDrop: 0.03
-  bodyBobAmp: 0.015
+  bodyDrop: 0.02
+  bodyBobAmp: 0.012
   bodyRollAmp: 1
   bodyPitchAmp: 0.5
-  strideLen: 0.4
+  strideLen: 0.44
   swingFraction: 0.32
   stepHeight: 0.06
 --- !u!114 &2085549436
@@ -1112,9 +1112,13 @@ MonoBehaviour:
   - {fileID: 455181203}
   endBone: {fileID: 455181202}
   poleLocal: {x: 0, y: 0, z: 1}
+  useLastJoint: 1
+  lastJointShare: 0.5
   keepFootFlat: 1
   upperLen: 0
+  midLen: 0
   lowerLen: 0
+  chainLen: 0
 --- !u!114 &2085549437
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1135,9 +1139,13 @@ MonoBehaviour:
   - {fileID: 455181216}
   endBone: {fileID: 455181234}
   poleLocal: {x: 0, y: 0, z: -1}
+  useLastJoint: 0
+  lastJointShare: 0.4
   keepFootFlat: 1
   upperLen: 0
+  midLen: 0
   lowerLen: 0
+  chainLen: 0
 --- !u!114 &2085549438
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1158,9 +1166,13 @@ MonoBehaviour:
   - {fileID: 455181232}
   endBone: {fileID: 455181235}
   poleLocal: {x: 0, y: 0, z: 1}
+  useLastJoint: 1
+  lastJointShare: 0.5
   keepFootFlat: 1
   upperLen: 0
+  midLen: 0
   lowerLen: 0
+  chainLen: 0
 --- !u!114 &2085549439
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1181,9 +1193,13 @@ MonoBehaviour:
   - {fileID: 455181220}
   endBone: {fileID: 455181236}
   poleLocal: {x: 0, y: 0, z: -1}
+  useLastJoint: 0
+  lastJointShare: 0.4
   keepFootFlat: 1
   upperLen: 0
+  midLen: 0
   lowerLen: 0
+  chainLen: 0
 --- !u!114 &2085549440
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1198,7 +1214,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PonyFollow
   target: {fileID: 1583691167}
   stopDistance: 1.4
-  speed: 1.2
+  maxSpeed: 0.6
+  accelerationFactor: 1.5
   turnSpeed: 5
 --- !u!4 &2085549441
 Transform:
